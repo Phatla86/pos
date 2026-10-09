@@ -1427,10 +1427,10 @@
             <h2><span>📧</span> Thông báo đơn về Gmail</h2>
           </div>
           <div class="panel-body">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem; padding-bottom:0.65rem; border-bottom:1px solid var(--border);">
               <div>
-                <strong style="font-size:0.88rem; color:#1e293b;">Bật thông báo khi hoàn thành đơn</strong>
-                <div style="font-size:0.73rem; color:var(--text-muted);">Tự động gửi hóa đơn chi tiết về Gmail mỗi khi bàn thanh toán</div>
+                <strong style="font-size:0.88rem; color:#1e293b;">Bật gửi email khi xong đơn</strong>
+                <div style="font-size:0.72rem; color:var(--text-muted);">Tự động gửi hóa đơn chi tiết về Gmail mỗi khi hoàn tất thanh toán</div>
               </div>
               <label class="switch-toggle" title="Bật/Tắt gửi email">
                 <input type="checkbox" id="emailNotifyEnabled" onchange="toggleEmailNotify(this.checked)">
@@ -1441,27 +1441,52 @@
             <div class="form-group">
               <label>Gmail nhận thông báo (Gmail của bạn / chủ quán)</label>
               <input type="email" class="form-control" id="emailReceiverInput" placeholder="Ví dụ: chucuahang@gmail.com">
-              <small style="font-size:0.7rem; color:var(--text-muted);">Có thể nhập nhiều Gmail cách nhau bằng dấu phẩy (,)</small>
+              <small style="font-size:0.7rem; color:var(--text-muted);">Có thể điền nhiều Gmail, cách nhau bằng dấu phẩy (,)</small>
             </div>
 
             <div class="form-group">
-              <label>Gmail gửi thông báo (Tài khoản Gmail của quán)</label>
-              <input type="email" class="form-control" id="emailSenderInput" placeholder="Ví dụ: cafesaigon.pos@gmail.com">
+              <label>Phương thức gửi Email</label>
+              <select class="form-control" id="emailMethodSelect" onchange="toggleEmailMethod(this.value)">
+                <option value="GMAIL_SMTP">Cách 1: Dùng Gmail trực tiếp (App Password 16 chữ cái)</option>
+                <option value="RESEND_API">Cách 2: Dùng Resend API (Khuyên dùng trên Cloud Render - 100% không bị chặn)</option>
+              </select>
             </div>
 
-            <div class="form-group">
-              <label>Mật khẩu ứng dụng (App Password 16 chữ cái của Google)</label>
-              <div style="position:relative;">
-                <input type="password" class="form-control" id="emailPasswordInput" placeholder="16 chữ cái (ví dụ: abcd efgh ijkl mnop)" style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; padding-right:2.2rem;">
-                <button type="button" onclick="togglePasswordVisibility('emailPasswordInput')" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer;" title="Hiện/Ẩn mật khẩu">👁️</button>
+            <!-- Khung nhập Gmail SMTP -->
+            <div id="gmailSmtpFields">
+              <div class="form-group">
+                <label>Gmail của quán dùng để gửi đi</label>
+                <input type="email" class="form-control" id="emailSenderInput" placeholder="Ví dụ: cafesaigon.pos@gmail.com">
               </div>
-              <div style="margin-top:0.35rem; font-size:0.72rem; color:var(--text-muted); line-height:1.4;">
-                💡 <b>Cách lấy App Password:</b> Vào <i>Tài khoản Google &gt; Bảo mật &gt; Mật khẩu ứng dụng</i>, tạo mật khẩu cho "CafePOS" rồi dán vào đây.
+
+              <div class="form-group">
+                <label>Mật khẩu ứng dụng Google (App Password 16 chữ cái)</label>
+                <div style="position:relative;">
+                  <input type="password" class="form-control" id="emailPasswordInput" placeholder="16 chữ cái (ví dụ: abcd efgh ijkl mnop)" style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; padding-right:2.2rem;">
+                  <button type="button" onclick="togglePasswordVisibility('emailPasswordInput')" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer;" title="Hiện/Ẩn mật khẩu">👁️</button>
+                </div>
+                <div style="margin-top:0.35rem; font-size:0.71rem; color:var(--text-muted); line-height:1.4;">
+                  💡 Vào <i>Tài khoản Google &gt; Bảo mật &gt; Bật xác minh 2 bước &gt; Mật khẩu ứng dụng</i>, tạo mật khẩu cho "CafePOS" rồi dán vào đây.
+                </div>
+              </div>
+            </div>
+
+            <!-- Khung nhập Resend API -->
+            <div id="resendApiFields" style="display:none;">
+              <div class="form-group">
+                <label>Resend API Key (Miễn phí 3.000 mail/tháng)</label>
+                <div style="position:relative;">
+                  <input type="password" class="form-control" id="resendApiKeyInput" placeholder="re_xxxxxxxxxxxxxx" style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; padding-right:2.2rem;">
+                  <button type="button" onclick="togglePasswordVisibility('resendApiKeyInput')" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer;" title="Hiện/Ẩn">👁️</button>
+                </div>
+                <div style="margin-top:0.35rem; font-size:0.71rem; color:var(--text-muted); line-height:1.4;">
+                  💡 Đăng ký 30 giây tại <a href="https://resend.com" target="_blank" style="color:var(--primary); font-weight:700;">resend.com</a> &gt; Bấm <b>API Keys</b> &gt; Copy key bắt đầu bằng <code>re_</code> dán vào đây. Chạy qua cổng 443 HTTPS đảm bảo 100% thành công trên Render!
+                </div>
               </div>
             </div>
 
             <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-              <button class="btn-primary" onclick="saveEmailSettings()">Lưu cấu hình Gmail</button>
+              <button class="btn-primary" onclick="saveEmailSettings()">Lưu cấu hình</button>
               <button class="btn-secondary" onclick="sendTestEmail()">🧪 Gửi thử Email kiểm tra</button>
             </div>
           </div>
@@ -2108,9 +2133,10 @@
         }
       } else if (type === 'TEST_EMAIL_RESULT') {
         if (payload.success) {
-          alert('🎉 Thành công!\n' + payload.message + '\nHãy mở hòm thư Gmail của bạn để kiểm tra email hóa đơn mẫu.');
+          alert('🎉 THÀNH CÔNG!\n\n' + (payload.message || 'Đã gửi email thử nghiệm thành công!') + '\n\n👉 Bạn hãy mở hòm thư Gmail (' + document.getElementById('emailReceiverInput').value + ') để xem hóa đơn mẫu (nhớ kiểm tra cả Hộp thư đến và mục Thư rác/Spam).');
         } else {
-          alert('❌ Gửi email thất bại:\n' + payload.message);
+          const errDetail = payload.message || 'Lỗi không xác định hoặc máy chủ Cloud chặn cổng mạng.';
+          alert('❌ GỬI EMAIL THẤT BẠI:\n\n' + errDetail + '\n\n💡 GỢI Ý KHẮC PHỤC:\n1. Nếu báo lỗi 535: Mật khẩu ứng dụng 16 chữ cái bị sai hoặc chưa bật Xác minh 2 bước trên Google.\n2. Nếu báo Timeout/ETIMEDOUT: Máy chủ Cloud Render đang chặn cổng 465 ra ngoài. Bạn hãy chuyển sang dùng phương thức "Resend API" (hoàn toàn miễn phí 100%, chạy qua cổng 443 không bao giờ bị chặn).');
         }
       }
     }
@@ -2951,9 +2977,15 @@
         document.getElementById('bankOwnerInput').value = state.bankSettings.accountName || '';
       }
       if (document.getElementById('emailReceiverInput')) {
+        const method = (state.emailSettings && state.emailSettings.method) || 'GMAIL_SMTP';
+        document.getElementById('emailMethodSelect').value = method;
+        toggleEmailMethod(method);
         document.getElementById('emailReceiverInput').value = (state.emailSettings && state.emailSettings.receiverEmail) || '';
         document.getElementById('emailSenderInput').value = (state.emailSettings && state.emailSettings.senderEmail) || '';
         document.getElementById('emailPasswordInput').value = (state.emailSettings && state.emailSettings.senderPassword) || '';
+        if (document.getElementById('resendApiKeyInput')) {
+          document.getElementById('resendApiKeyInput').value = (state.emailSettings && state.emailSettings.resendApiKey) || '';
+        }
         document.getElementById('emailNotifyEnabled').checked = !!(state.emailSettings && state.emailSettings.enabled);
       }
     }
@@ -2973,12 +3005,24 @@
       showToast('✅ Đã lưu & đồng bộ thông tin quán tới mọi thiết bị!');
     }
 
+    function toggleEmailMethod(method) {
+      if (method === 'RESEND_API') {
+        document.getElementById('gmailSmtpFields').style.display = 'none';
+        document.getElementById('resendApiFields').style.display = 'block';
+      } else {
+        document.getElementById('gmailSmtpFields').style.display = 'block';
+        document.getElementById('resendApiFields').style.display = 'none';
+      }
+    }
+
     function saveEmailSettings() {
       if (!state.emailSettings) state.emailSettings = {};
       state.emailSettings.enabled = document.getElementById('emailNotifyEnabled').checked;
+      state.emailSettings.method = document.getElementById('emailMethodSelect').value;
       state.emailSettings.receiverEmail = document.getElementById('emailReceiverInput').value.trim();
       state.emailSettings.senderEmail = document.getElementById('emailSenderInput').value.trim();
       state.emailSettings.senderPassword = document.getElementById('emailPasswordInput').value.trim();
+      state.emailSettings.resendApiKey = (document.getElementById('resendApiKeyInput') ? document.getElementById('resendApiKeyInput').value.trim() : '');
       state.settingsUpdatedAt = Date.now();
       saveToStorage();
       broadcastSync('EMAIL_SETTINGS_UPDATE', {
@@ -3007,27 +3051,39 @@
     }
 
     function sendTestEmail() {
+      const method = document.getElementById('emailMethodSelect').value;
       const receiver = document.getElementById('emailReceiverInput').value.trim();
-      const sender = document.getElementById('emailSenderInput').value.trim();
-      const pass = document.getElementById('emailPasswordInput').value.trim();
 
       if (!receiver) {
-        showToast('Vui lòng nhập Gmail nhận thông báo!');
-        return;
-      }
-      if (!sender || !pass) {
-        showToast('Vui lòng nhập Gmail gửi và Mật khẩu ứng dụng 16 chữ cái!');
+        alert('⚠️ Vui lòng nhập địa chỉ Gmail nhận thông báo trước!');
         return;
       }
 
-      showToast('⏳ Đang gửi thử 1 email kiểm tra tới máy chủ Gmail...');
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'TEST_EMAIL',
-          payload: { receiverEmail: receiver, senderEmail: sender, senderPassword: pass }
-        }));
+      let payload = { method, receiverEmail: receiver };
+
+      if (method === 'RESEND_API') {
+        const apiKey = document.getElementById('resendApiKeyInput').value.trim();
+        if (!apiKey) {
+          alert('⚠️ Vui lòng nhập Resend API Key (lấy miễn phí tại resend.com)!');
+          return;
+        }
+        payload.resendApiKey = apiKey;
       } else {
-        showToast('Chưa kết nối máy chủ server.js để gửi email. Hãy kết nối server trước!');
+        const sender = document.getElementById('emailSenderInput').value.trim();
+        const pass = document.getElementById('emailPasswordInput').value.trim();
+        if (!sender || !pass) {
+          alert('⚠️ Vui lòng nhập Gmail gửi và Mật khẩu ứng dụng 16 chữ cái (App Password)!');
+          return;
+        }
+        payload.senderEmail = sender;
+        payload.senderPassword = pass;
+      }
+
+      showToast('⏳ Đang gửi thử email kiểm tra...');
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'TEST_EMAIL', payload }));
+      } else {
+        alert('⚠️ Chưa kết nối được với máy chủ WebSocket server.js để gửi mail. Vui lòng kiểm tra lại kết nối!');
       }
     }
 
