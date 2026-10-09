@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
 const tls = require('tls');
+const https = require('https');
 
 const PORT = parseInt(process.env.PORT) || 8080;
 const DB_FILE = path.join(__dirname, 'pos_database.json');
@@ -24,9 +25,11 @@ let posState = {
   },
   emailSettings: {
     enabled: false,
+    method: 'GMAIL_SMTP',
     receiverEmail: '',
     senderEmail: '',
-    senderPassword: ''
+    senderPassword: '',
+    resendApiKey: ''
   },
   settingsUpdatedAt: 1,
   menuUpdatedAt: 1
@@ -55,95 +58,188 @@ function saveDB() {
   try { fs.writeFileSync(DB_FILE, JSON.stringify(posState, null, 2), 'utf-8'); } catch (e) {}
 }
 
-// BỘ GỬI GMAIL TỰ ĐỘNG BẰNG GIAO THỨC TLS BẢO MẬT
+// 1. GỬI EMAIL QUA RESEND API (CỔNG 443 HTTPS - KHÔNG BAO GIỜ BỊ CHẶN)
+function sendEmailViaResend({ apiKey, to, subject, htmlBody }, callback) {
+  const recipients = Array.isArray(to) ? to : to.split(',').map(e => e.trim()).filter(Boolean);
+  const postData = JSON.stringify({
+    from: 'CafePOS <onboarding@resend.dev>',
+    to: recipients,
+    subject: subject,
+    html: htmlBody
+  });
+
+  const req = https.request('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey.trim()}`,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData)
+    },
+    timeout: 10000
+  }, (res) => {
+    let body = '';
+    res.on('data', chunk => body += chunk);
+    res.on('end', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        callback(null, { success: true });
+      } else {
+        try {
+          const json = JSON.parse(body);
+          callback(new Error(json.message || `Lỗi Resend (${res.statusCode}): ${body}`));
+        } catch(e) {
+          callback(new Error(`Lỗi Resend (${res.statusCode}): ${body}`));
+        }
+      }
+    });
+  });
+
+  req.on('timeout', () => {
+    req.destroy();
+    callback(new Error('Hết thời gian kết nối tới Resend API (Timeout 10s)'));
+  });
+
+  req.on('error', (err) => {
+    callback(new Error(`Lỗi mạng Resend API: ${err.message}`));
+  });
+
+  req.write(postData);
+  req.end();
+}
+
+// 2. GỬI EMAIL QUA GMAIL SMTP (TLS PORT 465)
 function sendGmailSMTP({ sender, password, to, subject, htmlBody }, callback) {
   if (!sender || !password || !to) {
-    if (callback) callback(new Error('Chưa cấu hình đầy đủ Gmail gửi, mật khẩu hoặc Gmail nhận.'));
+    callback(new Error('Vui lòng điền đầy đủ: Gmail gửi, Mật khẩu ứng dụng 16 chữ cái và Gmail nhận.'));
     return;
   }
+
   const cleanPass = password.replace(/\s+/g, '');
   const recipients = Array.isArray(to) ? to : to.split(',').map(e => e.trim()).filter(Boolean);
   if (recipients.length === 0) {
-    if (callback) callback(new Error('Chưa có địa chỉ Gmail nhận hợp lệ.'));
+    callback(new Error('Chưa có địa chỉ Gmail nhận hợp lệ.'));
     return;
   }
 
-  const client = tls.connect(465, 'smtp.gmail.com', { rejectUnauthorized: false }, () => {});
+  let isFinished = false;
+  function finish(err, res) {
+    if (isFinished) return;
+    isFinished = true;
+    try { client.destroy(); } catch(e) {}
+    callback(err, res);
+  }
+
+  const client = tls.connect(465, 'smtp.gmail.com', {
+    rejectUnauthorized: false,
+    servername: 'smtp.gmail.com'
+  }, () => {});
+
   client.setEncoding('utf8');
+  client.setTimeout(12000, () => {
+    finish(new Error('Hết thời gian kết nối tới smtp.gmail.com:465 (Timeout 12s). Máy chủ Render đang chặn cổng SMTP 465 ra ngoài. Bạn hãy chuyển sang dùng phương thức "Resend API" qua cổng 443!'));
+  });
 
   let step = 0;
   let recipientIndex = 0;
-
-  client.setTimeout(15000, () => {
-    client.destroy();
-    if (callback) callback(new Error('Hết thời gian kết nối tới máy chủ Gmail (Timeout 15s).'));
-  });
 
   client.on('data', (data) => {
     const response = data.toString();
     const code = parseInt(response.substring(0, 3));
 
     if (code >= 400 && code <= 599) {
-      client.end();
       let errMsg = `Lỗi Gmail (${code}): ${response.trim()}`;
-      if (code === 535) errMsg = 'Lỗi xác thực: Mật khẩu ứng dụng 16 chữ cái không chính xác.';
-      if (callback) callback(new Error(errMsg));
+      if (code === 535) {
+        errMsg = 'Lỗi xác thực (535): Mật khẩu ứng dụng 16 chữ cái không đúng, hoặc tài khoản chưa bật Xác minh 2 bước.';
+      }
+      finish(new Error(errMsg));
       return;
     }
 
-    if (step === 0 && code === 220) {
-      step = 1;
-      client.write('EHLO localhost\r\n');
-    } else if (step === 1 && code === 250) {
-      step = 2;
-      client.write('AUTH LOGIN\r\n');
-    } else if (step === 2 && code === 334) {
-      step = 3;
-      client.write(Buffer.from(sender).toString('base64') + '\r\n');
-    } else if (step === 3 && code === 334) {
-      step = 4;
-      client.write(Buffer.from(cleanPass).toString('base64') + '\r\n');
-    } else if (step === 4 && code === 235) {
-      step = 5;
-      client.write(`MAIL FROM:<${sender}>\r\n`);
-    } else if (step === 5 && code === 250) {
-      step = 6;
-      client.write(`RCPT TO:<${recipients[recipientIndex]}>\r\n`);
-    } else if (step === 6 && code === 250) {
-      recipientIndex++;
-      if (recipientIndex < recipients.length) {
+    try {
+      if (step === 0 && code === 220) {
+        step = 1;
+        client.write('EHLO localhost\r\n');
+      } else if (step === 1 && code === 250) {
+        step = 2;
+        client.write('AUTH LOGIN\r\n');
+      } else if (step === 2 && code === 334) {
+        step = 3;
+        client.write(Buffer.from(sender).toString('base64') + '\r\n');
+      } else if (step === 3 && code === 334) {
+        step = 4;
+        client.write(Buffer.from(cleanPass).toString('base64') + '\r\n');
+      } else if (step === 4 && code === 235) {
+        step = 5;
+        client.write(`MAIL FROM:<${sender}>\r\n`);
+      } else if (step === 5 && code === 250) {
+        step = 6;
         client.write(`RCPT TO:<${recipients[recipientIndex]}>\r\n`);
-      } else {
-        step = 7;
-        client.write('DATA\r\n');
+      } else if (step === 6 && code === 250) {
+        recipientIndex++;
+        if (recipientIndex < recipients.length) {
+          client.write(`RCPT TO:<${recipients[recipientIndex]}>\r\n`);
+        } else {
+          step = 7;
+          client.write('DATA\r\n');
+        }
+      } else if (step === 7 && code === 354) {
+        step = 8;
+        const rawSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`;
+        const message = [
+          `From: "${posState.shopSettings.name || 'Cafe POS'}" <${sender}>`,
+          `To: ${recipients.join(', ')}`,
+          `Subject: ${rawSubject}`,
+          `MIME-Version: 1.0`,
+          `Content-Type: text/html; charset=UTF-8`,
+          `Content-Transfer-Encoding: base64`,
+          '',
+          Buffer.from(htmlBody, 'utf-8').toString('base64'),
+          '',
+          '.'
+        ].join('\r\n') + '\r\n';
+        client.write(message);
+      } else if (step === 8 && code === 250) {
+        step = 9;
+        client.write('QUIT\r\n');
+        finish(null, { success: true });
       }
-    } else if (step === 7 && code === 354) {
-      step = 8;
-      const rawSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`;
-      const message = [
-        `From: "${posState.shopSettings.name || 'Cafe POS'}" <${sender}>`,
-        `To: ${recipients.join(', ')}`,
-        `Subject: ${rawSubject}`,
-        `MIME-Version: 1.0`,
-        `Content-Type: text/html; charset=UTF-8`,
-        `Content-Transfer-Encoding: base64`,
-        '',
-        Buffer.from(htmlBody, 'utf-8').toString('base64'),
-        '',
-        '.'
-      ].join('\r\n') + '\r\n';
-      client.write(message);
-    } else if (step === 8 && code === 250) {
-      step = 9;
-      client.write('QUIT\r\n');
-      client.end();
-      if (callback) callback(null, { success: true });
+    } catch(err) {
+      finish(err);
     }
   });
 
   client.on('error', (err) => {
-    if (callback) callback(err);
+    let msg = err.message || String(err);
+    if (msg.includes('ETIMEDOUT') || msg.includes('ECONNREFUSED')) {
+      msg = `Không thể kết nối đến smtp.gmail.com:465 (${msg}). Máy chủ Cloud Render đang chặn cổng SMTP ra ngoài. Bạn hãy chọn cách gửi qua "Resend API" qua cổng 443 để thành công 100%!`;
+    }
+    finish(new Error(msg));
   });
+
+  client.on('close', () => {
+    if (!isFinished) {
+      finish(new Error('Kết nối tới Gmail SMTP bị ngắt đột ngột.'));
+    }
+  });
+}
+
+function dispatchEmail({ emailSettings, to, subject, htmlBody }, callback) {
+  const method = emailSettings.method || 'GMAIL_SMTP';
+  if (method === 'RESEND_API' && emailSettings.resendApiKey) {
+    sendEmailViaResend({
+      apiKey: emailSettings.resendApiKey,
+      to: to || emailSettings.receiverEmail,
+      subject: subject,
+      htmlBody: htmlBody
+    }, callback);
+  } else {
+    sendGmailSMTP({
+      sender: emailSettings.senderEmail,
+      password: emailSettings.senderPassword,
+      to: to || emailSettings.receiverEmail,
+      subject: subject,
+      htmlBody: htmlBody
+    }, callback);
+  }
 }
 
 function generateOrderEmailHtml(order, shopSettings) {
@@ -291,16 +387,15 @@ wss.on('connection', (ws) => {
         if (posState.emailSettings && posState.emailSettings.enabled && posState.emailSettings.receiverEmail) {
           const emailHtml = generateOrderEmailHtml(payload.order, posState.shopSettings);
           const emailSubject = `☕ [${posState.shopSettings.name || 'Cafe'}] Đơn hoàn thành: Bàn ${payload.order.tableId} - ${(payload.order.total||0).toLocaleString('vi-VN')} đ`;
-          
-          sendGmailSMTP({
-            sender: posState.emailSettings.senderEmail,
-            password: posState.emailSettings.senderPassword,
+
+          dispatchEmail({
+            emailSettings: posState.emailSettings,
             to: posState.emailSettings.receiverEmail,
             subject: emailSubject,
             htmlBody: emailHtml
           }, (err) => {
-            if (err) console.error('[Email Error]:', err.message);
-            else console.log(`[Email] Đã gửi thông báo đơn Bàn ${payload.order.tableId} về ${posState.emailSettings.receiverEmail}`);
+            if (err) console.error('[Auto Email Error]:', err.message);
+            else console.log(`[Email] Đã gửi thông báo đơn Bàn ${payload.order.tableId} tới ${posState.emailSettings.receiverEmail}`);
           });
         }
       } else if (type === 'MENU_UPDATE' && payload) {
@@ -332,16 +427,28 @@ wss.on('connection', (ws) => {
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         };
         const emailHtml = generateOrderEmailHtml(testOrder, posState.shopSettings);
-        sendGmailSMTP({
-          sender: payload.senderEmail || (posState.emailSettings && posState.emailSettings.senderEmail),
-          password: payload.senderPassword || (posState.emailSettings && posState.emailSettings.senderPassword),
-          to: payload.receiverEmail || (posState.emailSettings && posState.emailSettings.receiverEmail),
+
+        const tempSettings = {
+          method: payload.method || (posState.emailSettings && posState.emailSettings.method) || 'GMAIL_SMTP',
+          senderEmail: payload.senderEmail || (posState.emailSettings && posState.emailSettings.senderEmail),
+          senderPassword: payload.senderPassword || (posState.emailSettings && posState.emailSettings.senderPassword),
+          resendApiKey: payload.resendApiKey || (posState.emailSettings && posState.emailSettings.resendApiKey),
+          receiverEmail: payload.receiverEmail || (posState.emailSettings && posState.emailSettings.receiverEmail)
+        };
+
+        dispatchEmail({
+          emailSettings: tempSettings,
+          to: tempSettings.receiverEmail,
           subject: `🧪 [Kiểm tra] Thử nghiệm gửi email từ ${posState.shopSettings.name || 'Cafe POS'}`,
           htmlBody: emailHtml
         }, (err) => {
+          const errMsg = err ? (err.message || String(err)) : '';
           ws.send(JSON.stringify({
             type: 'TEST_EMAIL_RESULT',
-            payload: { success: !err, message: err ? err.message : 'Đã gửi email thử nghiệm thành công! Hãy kiểm tra hòm thư của bạn.' }
+            payload: {
+              success: !err,
+              message: err ? errMsg : 'Đã gửi email thử nghiệm thành công! Hãy kiểm tra hòm thư Gmail của bạn (nhớ xem cả mục Hộp thư đến và mục Thư rác/Spam).'
+            }
           }));
         });
       } else if (type === 'RESTORE_STATE' && payload) {
