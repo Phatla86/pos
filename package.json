@@ -1,0 +1,12 @@
+{
+  "name": "pos-cafe-10ban-realtime",
+  "version": "1.0.0",
+  "description": "Phần mềm POS bán hàng cho quán cafe 10 bàn, thanh toán VietQR / Tiền mặt và đồng bộ dữ liệu thời gian thực",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
