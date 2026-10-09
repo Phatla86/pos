@@ -2082,6 +2082,7 @@
             menuUpdatedAt: state.menuUpdatedAt,
             shopSettings: state.shopSettings,
             bankSettings: state.bankSettings,
+            emailSettings: state.emailSettings,
             settingsUpdatedAt: state.settingsUpdatedAt
           });
         }
@@ -2977,16 +2978,25 @@
         document.getElementById('bankOwnerInput').value = state.bankSettings.accountName || '';
       }
       if (document.getElementById('emailReceiverInput')) {
-        const method = (state.emailSettings && state.emailSettings.method) || 'GMAIL_SMTP';
-        document.getElementById('emailMethodSelect').value = method;
-        toggleEmailMethod(method);
-        document.getElementById('emailReceiverInput').value = (state.emailSettings && state.emailSettings.receiverEmail) || '';
-        document.getElementById('emailSenderInput').value = (state.emailSettings && state.emailSettings.senderEmail) || '';
-        document.getElementById('emailPasswordInput').value = (state.emailSettings && state.emailSettings.senderPassword) || '';
-        if (document.getElementById('resendApiKeyInput')) {
-          document.getElementById('resendApiKeyInput').value = (state.emailSettings && state.emailSettings.resendApiKey) || '';
+        if (!state.emailSettings) state.emailSettings = { enabled: false, method: 'GMAIL_SMTP', receiverEmail: '', senderEmail: '', senderPassword: '', resendApiKey: '' };
+        const method = state.emailSettings.method || 'GMAIL_SMTP';
+        if (document.getElementById('emailMethodSelect')) {
+          document.getElementById('emailMethodSelect').value = method;
+          toggleEmailMethod(method);
         }
-        document.getElementById('emailNotifyEnabled').checked = !!(state.emailSettings && state.emailSettings.enabled);
+        document.getElementById('emailReceiverInput').value = state.emailSettings.receiverEmail || '';
+        if (document.getElementById('emailSenderInput')) {
+          document.getElementById('emailSenderInput').value = state.emailSettings.senderEmail || '';
+        }
+        if (document.getElementById('emailPasswordInput')) {
+          document.getElementById('emailPasswordInput').value = state.emailSettings.senderPassword || '';
+        }
+        if (document.getElementById('resendApiKeyInput')) {
+          document.getElementById('resendApiKeyInput').value = state.emailSettings.resendApiKey || '';
+        }
+        if (document.getElementById('emailNotifyEnabled')) {
+          document.getElementById('emailNotifyEnabled').checked = !!state.emailSettings.enabled;
+        }
       }
     }
 
@@ -3020,16 +3030,26 @@
       state.emailSettings.enabled = document.getElementById('emailNotifyEnabled').checked;
       state.emailSettings.method = document.getElementById('emailMethodSelect').value;
       state.emailSettings.receiverEmail = document.getElementById('emailReceiverInput').value.trim();
-      state.emailSettings.senderEmail = document.getElementById('emailSenderInput').value.trim();
-      state.emailSettings.senderPassword = document.getElementById('emailPasswordInput').value.trim();
-      state.emailSettings.resendApiKey = (document.getElementById('resendApiKeyInput') ? document.getElementById('resendApiKeyInput').value.trim() : '');
+      state.emailSettings.senderEmail = document.getElementById('emailSenderInput') ? document.getElementById('emailSenderInput').value.trim() : '';
+      state.emailSettings.senderPassword = document.getElementById('emailPasswordInput') ? document.getElementById('emailPasswordInput').value.trim() : '';
+      state.emailSettings.resendApiKey = document.getElementById('resendApiKeyInput') ? document.getElementById('resendApiKeyInput').value.trim() : '';
       state.settingsUpdatedAt = Date.now();
       saveToStorage();
+      // Gửi đồng bộ cấu hình email tới toàn hệ thống
       broadcastSync('EMAIL_SETTINGS_UPDATE', {
         emailSettings: state.emailSettings,
         settingsUpdatedAt: state.settingsUpdatedAt
       });
-      showToast('✅ Đã lưu cấu hình thông báo Gmail thành công!');
+      // Đẩy lưu vĩnh viễn lên server
+      broadcastSync('RESTORE_STATE', {
+        products: state.products,
+        menuUpdatedAt: state.menuUpdatedAt,
+        shopSettings: state.shopSettings,
+        bankSettings: state.bankSettings,
+        emailSettings: state.emailSettings,
+        settingsUpdatedAt: state.settingsUpdatedAt
+      });
+      showToast('✅ Đã lưu vĩnh viễn cấu hình Gmail tới toàn hệ thống!');
     }
 
     function toggleEmailNotify(enabled) {
@@ -3118,6 +3138,7 @@
       const backupData = {
         shopSettings: state.shopSettings,
         bankSettings: state.bankSettings,
+        emailSettings: state.emailSettings,
         products: state.products,
         backupTime: new Date().toISOString()
       };
@@ -3211,16 +3232,7 @@
       renderOrderPanel();
       renderOrdersHistory();
       renderMenuMgmtTable();
-
-      document.getElementById('shopNameInput').value = state.shopSettings.name;
-      document.getElementById('shopAddressInput').value = state.shopSettings.address;
-      document.getElementById('shopPhoneInput').value = state.shopSettings.phone;
-      document.getElementById('shopFooterInput').value = state.shopSettings.footer;
-      document.getElementById('headerShopName').innerText = state.shopSettings.name;
-
-      document.getElementById('bankSelect').value = state.bankSettings.bankId;
-      document.getElementById('bankAccountInput').value = state.bankSettings.accountNo;
-      document.getElementById('bankOwnerInput').value = state.bankSettings.accountName;
+      updateSettingsInputs();
 
       if (window.location.protocol.startsWith('http')) {
         const defaultWs = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
