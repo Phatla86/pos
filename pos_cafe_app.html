@@ -1313,6 +1313,196 @@
     .top-seller-rank.silver { background: #f1f5f9; color: #475569; }
     .top-seller-rank.bronze { background: #ffedd5; color: #c2410c; }
 
+
+    /* =========================================
+       CHẾ ĐỘ TỐI ESPRESSO DARK & HIỆU ỨNG SINH ĐỘNG
+       ========================================= */
+    [data-theme="dark"] {
+      --bg-body: #120d09;
+      --card-bg: #1c140e;
+      --border: #332317;
+      --text-main: #f8fafc;
+      --text-muted: #a39081;
+      --primary-light: #291c13;
+      --primary-border: #4d3625;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+      --shadow-lg: 0 10px 20px -3px rgb(0 0 0 / 0.5);
+    }
+
+    [data-theme="dark"] header {
+      background: #1c140e;
+      border-bottom-color: #332317;
+    }
+
+    [data-theme="dark"] .panel-header {
+      background: #160f0a;
+      border-bottom-color: #332317;
+    }
+
+    [data-theme="dark"] .panel-header h2 {
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .table-card {
+      background: #1c140e;
+      border-color: #332317;
+    }
+
+    [data-theme="dark"] .table-num {
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .table-card.occupied {
+      background: #2b1c0e;
+      border-color: #d97706;
+      box-shadow: 0 0 12px rgba(217, 119, 6, 0.2);
+    }
+
+    [data-theme="dark"] .product-card {
+      background: #1c140e;
+      border-color: #332317;
+    }
+
+    [data-theme="dark"] .product-name {
+      color: #f1f5f9;
+    }
+
+    [data-theme="dark"] .order-item-row {
+      background: #160f0a;
+      border-color: #2b1c12;
+    }
+
+    [data-theme="dark"] .item-title, [data-theme="dark"] .item-subtotal {
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .order-footer {
+      background: #160f0a;
+      border-top-color: #332317;
+    }
+
+    [data-theme="dark"] .summary-line.total {
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .mobile-bottom-nav {
+      background: #1c140e;
+      border-top-color: #332317;
+    }
+
+    [data-theme="dark"] .desktop-nav-tabs {
+      background: #120d09;
+    }
+
+    [data-theme="dark"] .desktop-tab-btn.active {
+      background: #291c13;
+      color: #f59e0b;
+    }
+
+    [data-theme="dark"] .category-tabs-wrap,
+    [data-theme="dark"] .search-filter-bar,
+    [data-theme="dark"] .category-btn,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .report-filter-bar,
+    [data-theme="dark"] .top-sellers-panel,
+    [data-theme="dark"] .menu-table-wrap,
+    [data-theme="dark"] .modal-card {
+      background: #1c140e;
+      border-color: #332317;
+    }
+
+    [data-theme="dark"] .stat-val,
+    [data-theme="dark"] .modal-header h3 {
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .modal-footer {
+      background: #160f0a;
+      border-top-color: #332317;
+    }
+
+    [data-theme="dark"] .form-control {
+      background: #160f0a;
+      border-color: #332317;
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .btn-secondary {
+      background: #291c13;
+      border-color: #3d2a1d;
+      color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .menu-table th {
+      background: #160f0a;
+      color: #a39081;
+      border-bottom-color: #332317;
+    }
+
+    [data-theme="dark"] .menu-table td {
+      border-bottom-color: #291c13;
+      color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .price-editable-pill {
+      background: #291c13;
+      color: #f59e0b;
+    }
+
+    /* Hiệu ứng nảy khi bấm vào món ăn */
+    .product-card {
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+    }
+
+    .product-card:active {
+      transform: scale(0.92) translateY(2px) !important;
+    }
+
+    .product-card-pop {
+      animation: cardPopAnim 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cardPopAnim {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.08); box-shadow: 0 6px 15px rgba(217, 119, 6, 0.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* Bàn đang có khách có hiệu ứng hào quang ấm áp */
+    .table-card.occupied {
+      animation: pulseWarmGlow 3s infinite alternate;
+    }
+
+    @keyframes pulseWarmGlow {
+      0% { box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
+    }
+
+    /* Nút đổi Theme Sáng / Tối */
+    .btn-theme-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    [data-theme="dark"] .btn-theme-toggle {
+      background: #291c13;
+      border-color: #4d3625;
+    }
+
+    .btn-theme-toggle:hover {
+      transform: rotate(20deg) scale(1.08);
+    }
+
   </style>
 </head>
 <body>
@@ -1348,6 +1538,9 @@
         <span class="status-dot"></span>
         <span id="syncStatusText">P2P Broadcast</span>
       </div>
+      <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Chuyển chế độ Sáng / Tối (Dark Mode)">
+        <span id="themeToggleIcon">🌙</span>
+      </button>
       <div class="clock" id="liveClock">00:00:00</div>
     </div>
   </header>
@@ -2148,6 +2341,97 @@
     }
 
     function soundBeep() { playAudioTone(750, 'sine', 0.08); }
+
+    // ==========================================
+    // HIỆU ỨNG PHÁO HOA ĂN MỪNG (CONFETTI CELEBRATION)
+    // ==========================================
+    function launchConfetti() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '9999';
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const colors = ['#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5a2b', '#ec4899', '#8b5cf6', '#eab308'];
+        for (let i = 0; i < 80; i++) {
+          particles.push({
+            x: canvas.width / 2 + (Math.random() - 0.5) * 150,
+            y: canvas.height * 0.5 + (Math.random() - 0.5) * 80,
+            vx: (Math.random() - 0.5) * 14,
+            vy: -Math.random() * 14 - 5,
+            size: Math.random() * 9 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            rotSpeed: (Math.random() - 0.5) * 12,
+            gravity: 0.38
+          });
+        }
+
+        let frames = 0;
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          let alive = false;
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += p.gravity;
+            p.rotation += p.rotSpeed;
+            if (p.y < canvas.height + 25) alive = true;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          });
+          frames++;
+          if (alive && frames < 110) {
+            requestAnimationFrame(animate);
+          } else {
+            canvas.remove();
+          }
+        }
+        animate();
+      } catch(e) {}
+    }
+
+    // Âm thanh chuông tính tiền Keng-keng vui tai
+    function soundCashRegister() {
+      playAudioTone(987.77, 'sine', 0.12);
+      setTimeout(() => playAudioTone(1318.51, 'triangle', 0.25), 90);
+    }
+
+    // Chuyển đổi giao diện Sáng / Tối (Espresso Dark Mode)
+    function initTheme() {
+      const savedTheme = localStorage.getItem('cafepos_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const nextTheme = (current === 'dark') ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('cafepos_theme', nextTheme);
+      updateThemeIcon(nextTheme);
+      showToast(nextTheme === 'dark' ? '🌙 Đã bật chế độ Tối (Espresso Dark)' : '☀️ Đã bật chế độ Sáng');
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('themeToggleIcon');
+      if (icon) icon.innerText = (theme === 'dark') ? '☀️' : '🌙';
+    }
+
     function soundSuccess() {
       playAudioTone(587.33, 'triangle', 0.1);
       setTimeout(() => playAudioTone(880, 'triangle', 0.2), 110);
@@ -2673,6 +2957,11 @@
       if (!table.startTime) table.startTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
       soundBeep();
+      if (window.event && window.event.currentTarget) {
+        const c = window.event.currentTarget;
+        c.classList.add('product-card-pop');
+        setTimeout(() => c.classList.remove('product-card-pop'), 300);
+      }
       renderTablesGrid();
       renderOrderPanel();
       broadcastSync('TABLE_UPDATE', { tableId: table.id, tableData: table });
@@ -2941,7 +3230,8 @@
       renderTablesGrid();
       renderOrderPanel();
       renderOrdersHistory();
-      soundSuccess();
+      soundCashRegister();
+      launchConfetti();
 
       broadcastSync('ORDER_COMPLETED', { tableId: table.id, tableData: table, order: orderRecord });
 
@@ -3872,6 +4162,7 @@
     });
 
     window.onload = () => {
+      initTheme();
       loadFromStorage();
       renderTablesGrid();
       renderProducts();
