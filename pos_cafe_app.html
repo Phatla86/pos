@@ -70,65 +70,84 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors select-none touch-action-manipulation pb-16 md:pb-6">
 
-  <!-- HEADER MATCHING IMAGE 602898.PNG -->
+  <!-- HEADER TỐI ƯU HOÀN TOÀN CHO ĐIỆN THOẠI & MÁY TÍNH -->
   <header class="bg-white dark:bg-slate-900 border-b border-rose-100 dark:border-slate-800 sticky top-0 z-30 transition-colors shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <!-- LOGO & BRAND -->
-      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchMainTab('tables')">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-800 to-rose-600 flex items-center justify-center text-white shadow-md shadow-rose-900/20 text-xl font-bold">
-          ☕
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <span id="shopTitleHeader" class="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white">Cafe Cherry</span>
-            <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 rounded-full border border-rose-200 dark:border-rose-800">PRO POS</span>
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14 sm:h-16">
+        <!-- LOGO & TÊN QUÁN -->
+        <div class="flex items-center space-x-2 sm:space-x-3 cursor-pointer flex-shrink-0" onclick="switchMainTab('tables')">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-rose-700 to-rose-600 flex items-center justify-center text-white text-base sm:text-xl shadow-md shadow-rose-900/20">☕</div>
+          <div>
+            <div class="flex items-center gap-1">
+              <h1 class="font-black text-sm sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none whitespace-nowrap">Cafe Cherry</h1>
+              <span class="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">PRO POS</span>
+            </div>
+            <div class="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 whitespace-nowrap">
+              <span id="liveClock" class="font-mono">00:00:00</span> &bull; 10 Bàn
+            </div>
           </div>
-          <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">
-            <span id="liveClock">00:00:00</span> &bull; 10 Bàn Ăn
+        </div>
+
+        <!-- THANH ĐIỀU HƯỚNG TRÊN MÁY TÍNH (ẨN TRÊN ĐIỆN THOẠI) -->
+        <nav class="hidden md:flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button id="navBtnTables" onclick="switchMainTab('tables')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 shadow-sm whitespace-nowrap">
+            <span>🪑</span> <span>Sơ Đồ Bàn</span>
+          </button>
+          <button id="navBtnOrder" onclick="switchMainTab('order')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+            <span>☕</span> <span id="navBtnOrderText">Gọi Món (Bàn 1)</span>
+          </button>
+          <button id="navBtnMenu" onclick="switchMainTab('menu')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+            <span>🍴</span> <span>Thực Đơn</span>
+          </button>
+          <button id="navBtnReports" onclick="switchMainTab('reports')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+            <span>📊</span> <span>Doanh Thu</span>
+          </button>
+          <button id="navBtnSettings" onclick="switchMainTab('settings')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
+            <span>⚙️</span> <span>Cài Đặt</span>
+          </button>
+        </nav>
+
+        <!-- NÚT CHỨC NĂNG BÊN PHẢI -->
+        <div class="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
+          <button onclick="openInstallModal()" class="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-800 hover:to-rose-700 text-white font-bold text-[10px] sm:text-xs shadow-sm active:scale-95 transition-all">
+            <span>📱</span> <span>Cài App</span>
+          </button>
+          <div id="wsStatusBadge" class="flex items-center gap-1 px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="hidden sm:inline">Realtime</span>
           </div>
+          <button onclick="toggleDarkMode()" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-200">
+            <span id="darkModeIcon">🌙</span>
+          </button>
         </div>
-      </div>
-
-      <!-- NAVIGATION TABS -->
-      <nav class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto max-w-full">
-        <button id="navBtnTables" onclick="switchMainTab('tables')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 shadow-sm whitespace-nowrap">
-          <span>🪑</span> <span>Sơ Đồ Bàn</span>
-        </button>
-        <button id="navBtnOrder" onclick="switchMainTab('order')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
-          <span>☕</span> <span id="navBtnOrderText">Gọi Món (Bàn 1)</span>
-        </button>
-        <button id="navBtnMenu" onclick="switchMainTab('menu')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
-          <span>🍴</span> <span>Thực Đơn</span>
-        </button>
-        <button id="navBtnReports" onclick="switchMainTab('reports')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
-          <span>📊</span> <span>Doanh Thu</span>
-        </button>
-        <button id="navBtnSettings" onclick="switchMainTab('settings')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap">
-          <span>⚙️</span> <span>Cài Đặt</span>
-        </button>
-      </nav>
-
-      <!-- RIGHT ACTIONS -->
-      <div class="flex items-center space-x-2 sm:space-x-3">
-        <!-- NÚT CÀI APP ĐIỆN THOẠI -->
-        <button onclick="openInstallModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-800 hover:to-rose-700 text-white text-xs font-bold shadow-sm shadow-rose-900/20 active:scale-95 transition-all">
-          <span>📱</span> <span>Cài App</span>
-        </button>
-
-        <!-- STATUS BADGE -->
-        <div id="syncBadge" onclick="manualReconnectWs()" title="Bấm để kết nối lại" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-all border bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
-          <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span id="syncText" class="hidden sm:inline font-mono">Cloud Zalo Realtime</span>
-          <span class="opacity-60 hover:opacity-100 ml-0.5">↻</span>
-        </div>
-
-        <!-- DARK MODE TOGGLE -->
-        <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Đổi giao diện Sáng / Tối">
-          <span id="darkModeIcon">🌙</span>
-        </button>
       </div>
     </div>
   </header>
+
+  <!-- THANH ĐIỀU HƯỚNG ĐÁY MÀN HÌNH CHO ĐIỆN THOẠI (BOTTOM NAV) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1 flex items-center justify-around shadow-[0_-4px_10px_rgba(0,0,0,0.05)] select-none">
+    <button id="mobNavTables" onclick="switchMainTab('tables')" class="flex flex-col items-center justify-center py-1 px-2 text-rose-700 dark:text-rose-400 transition-colors w-16">
+      <span class="text-lg leading-tight">🪑</span>
+      <span class="text-[10px] font-bold mt-0.5">Bàn Ăn</span>
+    </button>
+    <button id="mobNavOrder" onclick="switchMainTab('order')" class="relative flex flex-col items-center justify-center py-1 px-2 text-slate-500 dark:text-slate-400 transition-colors w-16">
+      <span class="text-lg leading-tight">☕</span>
+      <span id="mobNavOrderText" class="text-[10px] font-bold mt-0.5">Gọi Món</span>
+      <span id="mobNavOrderBadge" class="hidden absolute top-0.5 right-2 w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
+    </button>
+    <button id="mobNavMenu" onclick="switchMainTab('menu')" class="flex flex-col items-center justify-center py-1 px-2 text-slate-500 dark:text-slate-400 transition-colors w-16">
+      <span class="text-lg leading-tight">🍴</span>
+      <span class="text-[10px] font-bold mt-0.5">Thực Đơn</span>
+    </button>
+    <button id="mobNavReports" onclick="switchMainTab('reports')" class="flex flex-col items-center justify-center py-1 px-2 text-slate-500 dark:text-slate-400 transition-colors w-16">
+      <span class="text-lg leading-tight">📊</span>
+      <span class="text-[10px] font-bold mt-0.5">Doanh Thu</span>
+    </button>
+    <button id="mobNavSettings" onclick="switchMainTab('settings')" class="flex flex-col items-center justify-center py-1 px-2 text-slate-500 dark:text-slate-400 transition-colors w-16">
+      <span class="text-lg leading-tight">⚙️</span>
+      <span class="text-[10px] font-bold mt-0.5">Cài Đặt</span>
+    </button>
+  </nav>
 
   <!-- MAIN VIEW -->
   <main class="flex-1">
@@ -455,6 +474,46 @@
             <div>
               <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Tên Chủ Tài Khoản:</label>
               <input type="text" id="settingAccountName" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-extrabold text-slate-900 dark:text-white uppercase">
+            </div>
+          </div>
+        </div>
+
+                <!-- CẤU HÌNH GỬI EMAIL HÓA ĐƠN (GMAIL SMTP / RESEND) -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <span>📧</span> <span>Cấu Hình Gửi Hóa Đơn Qua Email (Gmail)</span>
+            </h3>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="settingEmailEnabled" class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Tự động gửi khi thanh toán</span>
+            </label>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Phương thức:</label>
+              <select id="settingEmailMethod" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white">
+                <option value="GMAIL_SMTP">Gmail SMTP (Cổng 465 SSL)</option>
+                <option value="RESEND_API">Resend API (Khuyên dùng đám mây)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Gmail Nhận Mặc Định (Chủ Quán):</label>
+              <input type="email" id="settingEmailReceiver" placeholder="chuquan@gmail.com" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Gmail Gửi Đi (Shop):</label>
+              <input type="email" id="settingEmailSender" placeholder="shopcafe@gmail.com" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Mật khẩu ứng dụng Gmail (16 chữ cái):</label>
+              <input type="password" id="settingEmailPassword" placeholder="xxxx xxxx xxxx xxxx" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white">
+            </div>
+            <div class="sm:col-span-2 flex items-center justify-between pt-2">
+              <span class="text-[11px] text-slate-400">Gửi hóa đơn tự động kèm chi tiết từng món và mã QR về hộp thư.</span>
+              <button type="button" onclick="testEmailConfig()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+                <span>🧪</span> <span>Gửi thử nghiệm</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1171,6 +1230,18 @@
         btnComplete.className = 'flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-700/20 transition-all active:scale-95';
       }
 
+            const emailInput = document.getElementById('billRecipientEmailInput');
+      if (emailInput) {
+        emailInput.value = (state.settings && state.settings.receiverEmail) ? state.settings.receiverEmail : '';
+      }
+      const msgEl = document.getElementById('billEmailResultMsg');
+      if (msgEl) { msgEl.classList.add('hidden'); msgEl.innerText = ''; }
+      const btnEmail = document.getElementById('btnSendBillEmail');
+      if (btnEmail) {
+        btnEmail.disabled = false;
+        btnEmail.className = 'px-3.5 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 active:scale-95 whitespace-nowrap';
+        btnEmail.innerHTML = '<span>Gửi Mail</span>';
+      }
       modal.classList.remove('hidden');
     }
 
@@ -1743,6 +1814,23 @@
       </div>
 
       <!-- Nút thao tác dưới Modal -->
+      <!-- KHU VỰC GỬI EMAIL HÓA ĐƠN TRÊN BILL -->
+      <div class="px-4 py-3 bg-rose-50/70 dark:bg-rose-950/40 border-t border-rose-100 dark:border-rose-900/60 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <span>✉️</span> <span>Gửi Hóa Đơn Qua Email</span>
+          </span>
+          <span id="billEmailStatusText" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400"></span>
+        </div>
+        <div class="flex gap-2">
+          <input type="email" id="billRecipientEmailInput" placeholder="Nhập địa chỉ Gmail nhận hóa đơn..." class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20">
+          <button id="btnSendBillEmail" onclick="sendBillEmailAction()" class="px-3.5 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 active:scale-95 whitespace-nowrap">
+            <span>Gửi Mail</span>
+          </button>
+        </div>
+        <div id="billEmailResultMsg" class="hidden text-[11px] font-semibold py-1"></div>
+      </div>
+
       <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2.5">
         <button onclick="printBill()" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-black dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs shadow-md transition-all active:scale-95">
           <span>🖨️</span> <span>In Hóa Đơn</span>
