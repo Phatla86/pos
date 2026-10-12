@@ -37,6 +37,35 @@
     .scrollbar-none::-webkit-scrollbar { display: none; }
     .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
     .touch-action-manipulation { touch-action: manipulation; }
+      @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableBill, #printableBill * {
+        visibility: visible !important;
+      }
+      #printableBill {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 78mm !important;
+        max-width: 78mm !important;
+        margin: 0 !important;
+        padding: 3mm !important;
+        background: #fff !important;
+        color: #000 !important;
+        font-family: 'Courier New', Courier, monospace, sans-serif !important;
+        font-size: 11px !important;
+        line-height: 1.35 !important;
+        border: none !important;
+        box-shadow: none !important;
+        z-index: 99999 !important;
+      }
+      @page {
+        size: 80mm auto;
+        margin: 2mm;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors select-none touch-action-manipulation pb-16 md:pb-6">
@@ -228,6 +257,11 @@
               <span id="orderTotalText" class="text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-400 tracking-tight">0 đ</span>
             </div>
 
+            <div class="mb-2">
+              <button id="btnPrecheckBill" onclick="handlePrecheckBill()" disabled class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-all">
+                🧾 <span>Xem Bill / Tạm Tính</span>
+              </button>
+            </div>
             <div class="grid grid-cols-2 gap-2.5">
               <button id="btnPayCash" onclick="handlePayCash()" disabled class="flex items-center justify-center gap-2 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm shadow-md shadow-emerald-700/20 active:scale-98 transition-all">
                 💵 <span>Tiền Mặt</span>
@@ -1065,12 +1099,145 @@
     }
 
     // CHECKOUT: TIỀN MẶT & VIETQR
+    
+    // ==========================================
+    // QUẢN LÝ HÓA ĐƠN & IN BILL (PRINT RECEIPT)
+    // ==========================================
+    let currentBillContext = null;
+
+    function openBillModal(orderData, isPrecheck = false) {
+      currentBillContext = { orderData, isPrecheck };
+      const modal = document.getElementById('billModal');
+      if (!modal) return;
+
+      // Cập nhật thông tin quán
+      document.getElementById('billShopName').innerText = (state.settings.name || 'CAFE CHERRY').toUpperCase();
+      document.getElementById('billShopAddress').innerText = state.settings.address || '123 Nguyễn Huệ, Quận 1, TP. HCM';
+      document.getElementById('billShopPhone').innerText = 'Hotline: ' + (state.settings.phone || '0901 234 567');
+
+      // Tiêu đề & Loại hóa đơn
+      document.getElementById('billTitleType').innerText = isPrecheck ? 'PHIẾU TẠM TÍNH' : 'HÓA ĐƠN THANH TOÁN';
+      document.getElementById('billModalHeaderTitle').innerText = isPrecheck ? 'Phiếu Tạm Tính (Pre-check)' : 'Hóa Đơn Thanh Toán';
+      
+      document.getElementById('billOrderCode').innerText = '#' + (orderData.code || 'HD' + Date.now().toString().slice(-6));
+      document.getElementById('billTableName').innerText = (orderData.table_name || `Bàn ${orderData.table_id || state.selectedTableId}`).toUpperCase();
+      
+      const timeStr = orderData.created_at ? new Date(orderData.created_at).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
+      document.getElementById('billOrderTime').innerText = timeStr;
+
+      // Danh sách món
+      const listContainer = document.getElementById('billItemsList');
+      listContainer.innerHTML = '';
+      
+      const items = orderData.items || [];
+      let totalQty = 0;
+      let grandTotal = 0;
+
+      items.forEach(it => {
+        totalQty += it.qty;
+        const lineTotal = it.price * it.qty;
+        grandTotal += lineTotal;
+
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-12 py-1 items-start';
+        row.innerHTML = `
+          <div class="col-span-6 pr-1 font-bold text-slate-800 leading-tight">
+            ${it.name}
+            ${it.note ? `<div class="text-[9px] text-slate-400 font-normal">(${it.note})</div>` : ''}
+          </div>
+          <div class="col-span-2 text-center text-slate-600 font-bold">x${it.qty}</div>
+          <div class="col-span-4 text-right font-bold text-slate-900">${formatMoney(lineTotal)}</div>
+        `;
+        listContainer.appendChild(row);
+      });
+
+      document.getElementById('billTotalQty').innerText = totalQty;
+      
+      const method = orderData.payment_method || orderData.method || 'CASH';
+      const methodText = method === 'VIETQR' ? 'Chuyển khoản VietQR' : 'Tiền mặt';
+      document.getElementById('billPaymentMethod').innerText = methodText;
+      document.getElementById('billPaymentMethod').className = method === 'VIETQR' ? 'font-bold text-rose-700' : 'font-bold text-emerald-700';
+
+      const finalAmt = orderData.total_amount || orderData.total || grandTotal;
+      document.getElementById('billGrandTotal').innerText = formatMoney(finalAmt);
+
+      // Cấu hình nút Hoàn tất
+      const btnComplete = document.getElementById('btnConfirmBillFinish');
+      if (isPrecheck) {
+        btnComplete.innerText = 'Đóng Bill';
+        btnComplete.className = 'flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-xs shadow-md transition-all active:scale-95';
+      } else {
+        btnComplete.innerText = '✅ Hoàn Tất Đơn';
+        btnComplete.className = 'flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-700/20 transition-all active:scale-95';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeBillModal() {
+      const modal = document.getElementById('billModal');
+      if (modal) modal.classList.add('hidden');
+      currentBillContext = null;
+    }
+
+    function printBill() {
+      window.print();
+    }
+
+    function confirmBillCheckout() {
+      if (!currentBillContext) return;
+      const { orderData, isPrecheck } = currentBillContext;
+
+      if (isPrecheck) {
+        closeBillModal();
+        return;
+      }
+
+      // Hoàn tất đơn hàng vào hệ thống
+      finishCheckout(orderData.payment_method || 'CASH', orderData.total_amount || 0, orderData.code);
+      closeBillModal();
+    }
+
+    // Xử lý xem trước hóa đơn tạm tính
+    function handlePrecheckBill() {
+      const t = state.tables.find(item => item.id === state.selectedTableId);
+      if (!t || !t.items || t.items.length === 0) return;
+      const total = t.items.reduce((s, it) => s + (it.price * it.qty), 0);
+      const code = 'TT' + Date.now().toString().slice(-6);
+      
+      const precheckOrder = {
+        code,
+        table_id: t.id,
+        table_name: t.name,
+        total_amount: total,
+        total: total,
+        items: JSON.parse(JSON.stringify(t.items)),
+        created_at: new Date().toISOString(),
+        payment_method: 'CASH'
+      };
+
+      openBillModal(precheckOrder, true);
+    }
+
     function handlePayCash() {
       const t = state.tables.find(item => item.id === state.selectedTableId);
+      if (!t || !t.items || t.items.length === 0) return;
       const total = t.items.reduce((s, it) => s + (it.price * it.qty), 0);
-      if (confirm(`Xác nhận thanh toán TIỀN MẶT cho ${t.name} (Tổng: ${formatMoney(total)})?`)) {
-        finishCheckout('CASH', total);
-      }
+      const code = 'HD' + Date.now().toString().slice(-6);
+
+      const orderData = {
+        code,
+        table_id: t.id,
+        table_name: t.name,
+        total_amount: total,
+        total: total,
+        items: JSON.parse(JSON.stringify(t.items)),
+        created_at: new Date().toISOString(),
+        payment_method: 'CASH'
+      };
+
+      // Mở ngay Modal Hóa Đơn & In Bill
+      openBillModal(orderData, false);
     }
 
     function handlePayVietQR() {
@@ -1099,19 +1266,33 @@
     }
 
     function confirmQRCheckout() {
-      const t = state.tables.find(item => item.id === state.selectedTableId);
-      const total = t.items.reduce((s, it) => s + (it.price * it.qty), 0);
       closeQRModal();
-      finishCheckout('TRANSFER', total);
+      const t = state.tables.find(item => item.id === state.selectedTableId);
+      if (!t || !t.items || t.items.length === 0) return;
+      const total = t.items.reduce((s, it) => s + (it.price * it.qty), 0);
+      const code = 'HD' + Date.now().toString().slice(-6);
+
+      const orderData = {
+        code,
+        table_id: t.id,
+        table_name: t.name,
+        total_amount: total,
+        total: total,
+        items: JSON.parse(JSON.stringify(t.items)),
+        created_at: new Date().toISOString(),
+        payment_method: 'VIETQR'
+      };
+
+      openBillModal(orderData, false);
     }
 
-    function finishCheckout(method, total) {
+    function finishCheckout(method, total, customCode = null) {
       playCashSound();
-      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch(e) {}
 
       const t = state.tables.find(item => item.id === state.selectedTableId);
       const order = {
-        code: 'HD' + Date.now().toString().slice(-6),
+        code: customCode || ('HD' + Date.now().toString().slice(-6)),
         table_id: t.id,
         table_name: t.name,
         total_amount: total,
@@ -1444,13 +1625,6 @@
       if (tab === 'reports') renderReports();
       if (tab === 'settings') populateSettingsInputs();
     }
-      });
-
-      if (tab === 'pos') renderTables();
-      if (tab === 'menu') renderMenuStudioTable();
-      if (tab === 'reports') renderReports();
-      if (tab === 'settings') populateSettingsInputs();
-    }
 
     // DARK MODE & CLOCK
     function toggleDarkMode() {
@@ -1489,5 +1663,95 @@
       connectWs();
     };
   </script>
+  <!-- ========================================== -->
+  <!-- MODAL HÓA ĐƠN THANH TOÁN & IN BILL (K80) -->
+  <!-- ========================================== -->
+  <div id="billModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col my-auto max-h-[95vh]">
+      <!-- Header Modal -->
+      <div class="flex items-center justify-between px-5 py-3.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🧾</span>
+          <h3 id="billModalHeaderTitle" class="font-extrabold text-sm text-slate-800 dark:text-slate-100 uppercase tracking-wide">Hóa Đơn Thanh Toán</h3>
+        </div>
+        <button onclick="closeBillModal()" class="w-7 h-7 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors text-sm font-bold">✕</button>
+      </div>
+
+      <!-- Khung Tờ Hóa Đơn Chuẩn Máy In Nhiệt -->
+      <div class="overflow-y-auto p-4 bg-slate-100/60 dark:bg-slate-950/60 flex justify-center">
+        <div id="printableBill" class="w-full bg-white text-slate-900 p-4 rounded-xl border border-slate-200/80 shadow-sm font-mono text-xs leading-relaxed select-text">
+          <!-- TÊN QUÁN & ĐỊA CHỈ -->
+          <div class="text-center pb-2.5 border-b border-dashed border-slate-400">
+            <div class="text-lg">☕</div>
+            <h2 id="billShopName" class="text-sm font-black tracking-wider uppercase text-slate-900">CAFE CHERRY</h2>
+            <div id="billShopAddress" class="text-[10px] text-slate-600 mt-0.5 leading-tight">123 Nguyễn Huệ, Quận 1, TP. HCM</div>
+            <div id="billShopPhone" class="text-[10px] text-slate-600">Hotline: 0901 234 567</div>
+          </div>
+
+          <!-- THÔNG TIN ĐƠN -->
+          <div class="py-2 border-b border-dashed border-slate-400 space-y-0.5 text-[11px]">
+            <div id="billTitleType" class="text-center font-black tracking-wider uppercase py-0.5 text-xs text-rose-700">PHIẾU THANH TOÁN</div>
+            <div class="flex justify-between">
+              <span>Mã HĐ: <b id="billOrderCode">#HD123456</b></span>
+              <span id="billTableName" class="font-black text-rose-700 uppercase">BÀN 1</span>
+            </div>
+            <div class="flex justify-between text-slate-600 text-[10px]">
+              <span>Thời gian:</span>
+              <span id="billOrderTime">13/10/2026 01:15</span>
+            </div>
+            <div class="flex justify-between text-slate-600 text-[10px]">
+              <span>Thu ngân:</span>
+              <span>Quầy Thu Ngân</span>
+            </div>
+          </div>
+
+          <!-- BẢNG DANH SÁCH MÓN -->
+          <div class="py-2 border-b border-dashed border-slate-400">
+            <div class="grid grid-cols-12 font-bold text-[10px] pb-1 border-b border-slate-200 uppercase text-slate-500">
+              <span class="col-span-6">TÊN MÓN</span>
+              <span class="col-span-2 text-center">SL</span>
+              <span class="col-span-4 text-right">T.TIỀN</span>
+            </div>
+            <div id="billItemsList" class="divide-y divide-slate-100 py-1 space-y-1">
+              <!-- Render danh sách món -->
+            </div>
+          </div>
+
+          <!-- TỔNG KẾT TIỀN -->
+          <div class="py-2 border-b border-dashed border-slate-400 space-y-1 text-[11px]">
+            <div class="flex justify-between">
+              <span class="text-slate-600">Số lượng món:</span>
+              <span id="billTotalQty" class="font-bold">0</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Hình thức:</span>
+              <span id="billPaymentMethod" class="font-bold text-emerald-700">Tiền mặt</span>
+            </div>
+            <div class="flex justify-between items-baseline pt-1.5 mt-0.5 border-t border-slate-300">
+              <span class="text-xs font-black uppercase text-slate-900">TỔNG CỘNG:</span>
+              <span id="billGrandTotal" class="text-base font-black text-rose-700">0 đ</span>
+            </div>
+          </div>
+
+          <!-- LỜI CẢM ƠN -->
+          <div class="text-center pt-2.5 text-[10px] text-slate-500 space-y-0.5">
+            <div class="font-semibold text-slate-700">Cảm ơn Quý khách & Hẹn gặp lại!</div>
+            <div>Wifi: <b>CafeCherry_Free</b> &bull; Pass: <b>cherry888</b></div>
+            <div class="text-[9px] text-slate-400 mt-1">Hệ thống Cafe Cherry Realtime POS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nút thao tác dưới Modal -->
+      <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2.5">
+        <button onclick="printBill()" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-black dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs shadow-md transition-all active:scale-95">
+          <span>🖨️</span> <span>In Hóa Đơn</span>
+        </button>
+        <button id="btnConfirmBillFinish" onclick="confirmBillCheckout()" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-700/20 transition-all active:scale-95">
+          <span>✅</span> <span>Hoàn Tất</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
