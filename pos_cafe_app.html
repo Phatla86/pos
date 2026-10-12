@@ -79,7 +79,7 @@
           <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-rose-700 to-rose-600 flex items-center justify-center text-white text-base sm:text-xl shadow-md shadow-rose-900/20">☕</div>
           <div>
             <div class="flex items-center gap-1">
-              <h1 class="font-black text-sm sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none whitespace-nowrap">Cafe Cherry</h1>
+              <h1 id="shopTitleHeader" class="font-black text-sm sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none whitespace-nowrap">Cafe Cherry</h1>
               <span class="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">PRO POS</span>
             </div>
             <div class="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 whitespace-nowrap">
@@ -912,7 +912,7 @@
         const totalQty = items.reduce((sum, it) => sum + it.qty, 0);
 
         const card = document.createElement('div');
-        card.onclick = () => selectTable(table.id);
+        card.style.cursor = "pointer"; card.onclick = (e) => { e.preventDefault(); window.selectTable(table.id); };
         card.className = `group relative p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 select-none flex flex-col justify-between h-32 sm:h-36 ${
           isSelected
             ? 'border-rose-600 dark:border-rose-500 bg-rose-50/80 dark:bg-rose-950/40 shadow-md ring-2 ring-rose-500/20'
@@ -947,7 +947,7 @@
           <div class="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800/80 text-slate-400">
             <span>Bàn #${table.id}</span>
             <span class="text-rose-600 dark:text-rose-400 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-              <span>Chọn món</span> <span>➔</span>
+              <span onclick="event.stopPropagation(); window.selectTable(${table.id});" class="cursor-pointer"><span>Chọn món</span> <span>➔</span></span>
             </span>
           </div>
         `;
@@ -1164,6 +1164,101 @@
     // ==========================================
     let currentBillContext = null;
 
+    
+    // ========================================================
+    // GỬI HÓA ĐƠN QUA EMAIL (GMAIL SMTP & RESEND)
+    // ========================================================
+    async function sendBillEmailAction() {
+      if (!currentBillContext || !currentBillContext.orderData) {
+        alert('Không tìm thấy thông tin đơn hàng để gửi email!');
+        return;
+      }
+      const input = document.getElementById('billRecipientEmailInput');
+      const statusEl = document.getElementById('billEmailResultMsg');
+      const btn = document.getElementById('btnSendBillEmail');
+      const email = (input?.value || '').trim();
+
+      if (!email || !email.includes('@')) {
+        alert('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: khachhang@gmail.com)!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Đang gửi...</span>';
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.className = 'text-[11px] font-semibold text-blue-600 block';
+        statusEl.innerText = `Đang kết nối gửi email tới ${email}...`;
+      }
+
+      try {
+        const res = await fetch('/api/email/send-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order: currentBillContext.orderData,
+            toEmail: email
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          btn.className = 'px-3.5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1';
+          btn.innerHTML = '<span>✓ Đã gửi</span>';
+          if (statusEl) {
+            statusEl.className = 'text-[11px] font-bold text-emerald-600 block';
+            statusEl.innerText = `✅ Đã gửi hóa đơn thành công tới ${email}!`;
+          }
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Thử lại</span>';
+          if (statusEl) {
+            statusEl.className = 'text-[11px] font-semibold text-rose-600 block';
+            statusEl.innerText = `❌ ${data.message || 'Lỗi gửi email. Vui lòng kiểm tra cấu hình Gmail trong Cài Đặt.'}`;
+          }
+        }
+      } catch(e) {
+        broadcastWs('SEND_ORDER_EMAIL', {
+          order: currentBillContext.orderData,
+          toEmail: email
+        });
+        btn.disabled = false;
+        btn.innerHTML = '<span>Gửi lại</span>';
+        if (statusEl) {
+          statusEl.className = 'text-[11px] font-bold text-emerald-600 block';
+          statusEl.innerText = `Đã phát lệnh gửi hóa đơn qua Realtime tới ${email}!`;
+        }
+      }
+    }
+    window.sendBillEmailAction = sendBillEmailAction;
+
+    async function testEmailConfig() {
+      const email = document.getElementById('settingEmailReceiver')?.value || '';
+      if (!email || !email.includes('@')) {
+        alert('Vui lòng nhập Gmail Nhận Mặc Định hợp lệ trước khi thử nghiệm!');
+        return;
+      }
+      alert(`Đang gửi email thử nghiệm tới ${email}... Vui lòng đợi trong giây lát.`);
+      try {
+        const res = await fetch('/api/email/send-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail: email,
+            order: {
+              code: 'TEST01',
+              tableName: 'Bàn Thử Nghiệm',
+              total: 25000,
+              items: [{ name: 'Cà phê Đen đá', price: 25000, qty: 1 }]
+            }
+          })
+        });
+        const data = await res.json();
+        alert(data.message || (data.success ? 'Gửi email thành công!' : 'Lỗi gửi email.'));
+      } catch(e) {
+        alert('Đã gửi yêu cầu kiểm tra email qua máy chủ!');
+      }
+    }
+    window.testEmailConfig = testEmailConfig;
     function openBillModal(orderData, isPrecheck = false) {
       currentBillContext = { orderData, isPrecheck };
       const modal = document.getElementById('billModal');
@@ -1642,7 +1737,7 @@
       document.getElementById('settingAccountNo').value = state.settings.accountNo || '';
       document.getElementById('settingAccountName').value = state.settings.accountName || '';
       document.getElementById('settingWsUrlInput').value = getWsUrl();
-      document.getElementById('shopTitleHeader').innerText = state.settings.name || 'Cafe Cherry';
+      const hEl = document.getElementById('shopTitleHeader'); if (hEl) hEl.innerText = state.settings.name || 'Cafe Cherry';
     }
 
     function handleSaveSettingsForm(e) {
@@ -1654,7 +1749,7 @@
       state.settings.accountNo = document.getElementById('settingAccountNo').value.trim();
       state.settings.accountName = document.getElementById('settingAccountName').value.trim().toUpperCase();
 
-      document.getElementById('shopTitleHeader').innerText = state.settings.name;
+      const hEl2 = document.getElementById('shopTitleHeader'); if (hEl2) hEl2.innerText = state.settings.name;
       saveToLocalStorage();
       broadcastWs('SETTINGS_UPDATE', { settings: state.settings });
       alert('✅ Đã lưu cài đặt quán thành công!');
@@ -1670,19 +1765,95 @@
       connectWs(url);
     }
 
-    // TABS SWITCHER
+        // ========================================================
+    // TẤT CẢ HÀM ĐIỀU HƯỚNG TABS, CHỌN BÀN & GỬI EMAIL CHUẨN XÁC
+    // ========================================================
+    function updateSelectedTableLabels() {
+      const table = state.tables.find(t => t.id === state.selectedTableId) || { id: state.selectedTableId, name: `Bàn ${state.selectedTableId}`, items: [] };
+      const isOccupied = table.items && table.items.length > 0;
+
+      const navText = document.getElementById('navBtnOrderText');
+      if (navText) navText.innerText = `Gọi Món (${table.name})`;
+
+      const mobNavText = document.getElementById('mobNavOrderText');
+      if (mobNavText) mobNavText.innerText = table.name;
+
+      const mobBadge = document.getElementById('mobNavOrderBadge');
+      if (mobBadge) {
+        if (isOccupied) mobBadge.classList.remove('hidden');
+        else mobBadge.classList.add('hidden');
+      }
+
+      const selectedLbl = document.getElementById('selectedTableLabel');
+      if (selectedLbl) selectedLbl.innerText = table.name;
+
+      const orderTitle = document.getElementById('orderPanelTitle');
+      if (orderTitle) orderTitle.innerText = table.name;
+
+      const headerTitle = document.getElementById('orderHeaderTableTitle');
+      if (headerTitle) headerTitle.innerText = table.name;
+
+      const headerBadge = document.getElementById('orderHeaderTableBadge');
+      if (headerBadge) {
+        headerBadge.innerText = isOccupied ? 'CÓ KHÁCH' : 'TRỐNG';
+        headerBadge.className = isOccupied
+          ? 'text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300'
+          : 'text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300';
+      }
+
+      const headerTime = document.getElementById('orderHeaderStartTime');
+      if (headerTime) {
+        if (isOccupied && table.startTime) {
+          const minutes = Math.max(1, Math.floor((Date.now() - new Date(table.startTime).getTime()) / 60000));
+          headerTime.innerText = `Khách vào: ${new Date(table.startTime).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})} (${minutes} phút trước)`;
+        } else {
+          headerTime.innerText = 'Sẵn sàng đón khách';
+        }
+      }
+
+      const quickSel = document.getElementById('quickTableSelect');
+      if (quickSel) quickSel.value = state.selectedTableId;
+    }
+    window.updateSelectedTableLabels = updateSelectedTableLabels;
+
+    function selectTable(id) {
+      state.selectedTableId = parseInt(id, 10);
+      try { playBeepSound(); } catch(e) {}
+      updateSelectedTableLabels();
+      renderTables();
+      renderOrderPanel();
+      renderProducts();
+      switchMainTab('order');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    window.selectTable = selectTable;
+
+    function changeTableFromSelect(val) {
+      selectTable(parseInt(val, 10));
+    }
+    window.changeTableFromSelect = changeTableFromSelect;
+
     function switchMainTab(tab) {
       const tabs = ['tables', 'order', 'menu', 'reports', 'settings'];
       tabs.forEach(t => {
         const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
-        const btn = document.getElementById('navBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        const dBtn = document.getElementById('navBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        const mBtn = document.getElementById('mobNav' + t.charAt(0).toUpperCase() + t.slice(1));
+
         if (el) {
-          el.className = (t === tab) ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5' : 'hidden';
+          el.className = (t === tab) ? 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5 space-y-4 sm:space-y-5 pb-24 md:pb-6' : 'hidden';
         }
-        if (btn) {
-          btn.className = (t === tab)
+
+        if (dBtn) {
+          dBtn.className = (t === tab)
             ? 'flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 shadow-sm whitespace-nowrap'
             : 'flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white whitespace-nowrap';
+        }
+
+        if (mBtn) {
+          mBtn.className = (t === tab)
+            ? 'flex flex-col items-center justify-center py-1 px-2 text-rose-700 dark:text-rose-400 transition-colors w-16'
+            : 'flex flex-col items-center justify-center py-1 px-2 text-slate-400 dark:text-slate-500 hover:text-slate-700 transition-colors w-16';
         }
       });
 
@@ -1696,6 +1867,32 @@
       if (tab === 'reports') renderReports();
       if (tab === 'settings') populateSettingsInputs();
     }
+    window.switchMainTab = switchMainTab;
+
+    function openTransferModal() {
+      const targetId = prompt(`Nhập số bàn muốn chuyển đến (1-10) cho ${state.tables.find(t=>t.id===state.selectedTableId)?.name}:`);
+      if (!targetId) return;
+      const toId = parseInt(targetId, 10);
+      if (isNaN(toId) || toId < 1 || toId > 10 || toId === state.selectedTableId) {
+        alert('Số bàn không hợp lệ!');
+        return;
+      }
+      const fromTable = state.tables.find(t => t.id === state.selectedTableId);
+      const toTable = state.tables.find(t => t.id === toId);
+      if (!fromTable || !toTable) return;
+      toTable.items = [...(toTable.items || []), ...(fromTable.items || [])];
+      toTable.status = toTable.items.length > 0 ? 'occupied' : 'empty';
+      toTable.startTime = toTable.startTime || fromTable.startTime || new Date().toISOString();
+      fromTable.items = [];
+      fromTable.status = 'empty';
+      fromTable.startTime = null;
+      state.selectedTableId = toId;
+      saveToLocalStorage();
+      renderAll();
+      broadcastWs('TABLE_TRANSFER', { fromId: fromTable.id, toId: toTable.id });
+      alert(`✅ Đã chuyển toàn bộ món từ ${fromTable.name} sang ${toTable.name}!`);
+    }
+    window.openTransferModal = openTransferModal;
 
     // DARK MODE & CLOCK
     function toggleDarkMode() {
