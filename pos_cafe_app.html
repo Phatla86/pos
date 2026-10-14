@@ -125,7 +125,7 @@
   </header>
 
   <!-- THANH ĐIỀU HƯỚNG ĐÁY MÀN HÌNH CHO ĐIỆN THOẠI (BOTTOM NAV) -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1 flex items-center justify-around shadow-[0_-4px_10px_rgba(0,0,0,0.05)] select-none">
+  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1 flex items-center justify-around shadow-[0_-4px_10px_rgba(0,0,0,0.05)] select-none"> fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1 flex items-center justify-around shadow-[0_-4px_10px_rgba(0,0,0,0.05)] select-none">
     <button id="mobNavTables" onclick="switchMainTab('tables')" class="flex flex-col items-center justify-center py-1 px-2 text-rose-700 dark:text-rose-400 transition-colors w-16">
       <span class="text-lg leading-tight">🪑</span>
       <span class="text-[10px] font-bold mt-0.5">Bàn Ăn</span>
@@ -148,6 +148,33 @@
       <span class="text-[10px] font-bold mt-0.5">Cài Đặt</span>
     </button>
   </nav>
+
+  <!-- THANH THANH TOÁN NHANH NỔI CỐ ĐỊNH Ở ĐÁY MÀN HÌNH KHI GỌI MÓN (STICKY MOBILE CHECKOUT BAR) -->
+  <div id="mobileFloatingCheckoutBar" class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border-t-2 border-rose-500 shadow-[0_-8px_25px_rgba(0,0,0,0.2)] px-3 py-2.5 select-none transition-all">
+    <div class="flex items-center justify-between gap-2.5">
+      <!-- Cột thông tin bàn & tổng tiền (Chạm để cuộn xuống xem chi tiết món) -->
+      <div onclick="scrollToOrderPanel()" class="flex flex-col cursor-pointer flex-shrink-0 pr-1 active:opacity-70">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-black text-slate-800 dark:text-slate-100" id="floatBarTableTitle">Bàn 1</span>
+          <span id="floatBarItemsBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">0 món</span>
+        </div>
+        <div id="floatBarTotalAmount" class="text-base font-black text-rose-700 dark:text-rose-400 leading-tight mt-0.5">0 đ</div>
+      </div>
+
+      <!-- Các nút thanh toán nhanh không cần cuộn -->
+      <div class="flex items-center gap-2 flex-1 justify-end">
+        <button id="btnFloatPrecheck" onclick="handlePrecheckBill()" disabled class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center active:scale-95 shadow-sm" title="Xem hóa đơn tạm tính">
+          🧾
+        </button>
+        <button id="btnFloatPayCash" onclick="handlePayCash()" disabled class="flex-1 py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed text-white font-black text-xs shadow-md shadow-emerald-700/20 active:scale-95 transition-all flex items-center justify-center gap-1">
+          💵 <span>Tiền Mặt</span>
+        </button>
+        <button id="btnFloatPayVietQR" onclick="handlePayVietQR()" disabled class="flex-1 py-2.5 px-2 rounded-xl bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-800 disabled:opacity-30 disabled:cursor-not-allowed text-white font-black text-xs shadow-md shadow-rose-900/20 active:scale-95 transition-all flex items-center justify-center gap-1">
+          💳 <span>VietQR</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MAIN VIEW -->
   <main class="flex-1">
@@ -214,6 +241,32 @@
             <option value="9">Bàn 9</option>
             <option value="10">Bàn 10</option>
           </select>
+        </div>
+      </div>
+
+            <!-- THANH TỔNG TIỀN & THANH TOÁN NHANH Ở ĐỈNH TRANG GỌI MÓN -->
+      <div id="topQuickCheckoutBar" class="p-3 bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/30 dark:to-amber-950/20 rounded-2xl border border-rose-200/80 dark:border-rose-900/60 flex items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🛍️</span>
+          <div>
+            <div class="text-[10px] sm:text-xs text-slate-500 font-medium">Đơn đang gọi:</div>
+            <div class="flex items-baseline gap-1.5">
+              <span id="topBarItemsCount" class="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-slate-100">0 món</span>
+              <span class="text-slate-400">&bull;</span>
+              <span id="topBarTotalAmount" class="font-black text-sm sm:text-base text-rose-700 dark:text-rose-400">0 đ</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button id="btnTopPrecheck" onclick="handlePrecheckBill()" disabled class="px-2.5 py-2 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-95 flex items-center gap-1">
+            <span>🧾</span> <span class="hidden sm:inline">Tạm Tính</span>
+          </button>
+          <button id="btnTopPayCash" onclick="handlePayCash()" disabled class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-700/20 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 flex items-center gap-1">
+            <span>💵</span> <span>Tiền Mặt</span>
+          </button>
+          <button id="btnTopPayVietQR" onclick="handlePayVietQR()" disabled class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-800 text-white font-black text-xs shadow-md shadow-rose-900/20 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 flex items-center gap-1">
+            <span>💳</span> <span>VietQR</span>
+          </button>
         </div>
       </div>
 
@@ -1098,11 +1151,39 @@
         });
       }
 
+      const formattedTotal = formatMoney(total);
       document.getElementById('orderItemsCountText').innerText = `TỔNG TIỀN (${totalCount} món):`;
-      document.getElementById('orderTotalText').innerText = formatMoney(total);
+      document.getElementById('orderTotalText').innerText = formattedTotal;
 
       document.getElementById('btnPayCash').disabled = !hasItems;
       document.getElementById('btnPayVietQR').disabled = !hasItems;
+      if (document.getElementById('btnPrecheckBill')) document.getElementById('btnPrecheckBill').disabled = !hasItems;
+
+      // Cập nhật thanh nổi cố định ở đáy màn hình điện thoại (Floating Checkout Bar)
+      const floatTableTitle = document.getElementById('floatBarTableTitle');
+      if (floatTableTitle) floatTableTitle.innerText = curTable.name;
+      const floatItemsBadge = document.getElementById('floatBarItemsBadge');
+      if (floatItemsBadge) floatItemsBadge.innerText = `${totalCount} món`;
+      const floatTotalAmount = document.getElementById('floatBarTotalAmount');
+      if (floatTotalAmount) floatTotalAmount.innerText = formattedTotal;
+      const btnFloatCash = document.getElementById('btnFloatPayCash');
+      if (btnFloatCash) btnFloatCash.disabled = !hasItems;
+      const btnFloatQR = document.getElementById('btnFloatPayVietQR');
+      if (btnFloatQR) btnFloatQR.disabled = !hasItems;
+      const btnFloatPre = document.getElementById('btnFloatPrecheck');
+      if (btnFloatPre) btnFloatPre.disabled = !hasItems;
+
+      // Cập nhật thanh thanh toán nhanh ở đỉnh trang Gọi Món (Top Quick Bar)
+      const topItemsCount = document.getElementById('topBarItemsCount');
+      if (topItemsCount) topItemsCount.innerText = `${totalCount} món`;
+      const topTotalAmount = document.getElementById('topBarTotalAmount');
+      if (topTotalAmount) topTotalAmount.innerText = formattedTotal;
+      const btnTopCash = document.getElementById('btnTopPayCash');
+      if (btnTopCash) btnTopCash.disabled = !hasItems;
+      const btnTopQR = document.getElementById('btnTopPayVietQR');
+      if (btnTopQR) btnTopQR.disabled = !hasItems;
+      const btnTopPre = document.getElementById('btnTopPrecheck');
+      if (btnTopPre) btnTopPre.disabled = !hasItems;
     }
 
     function addItemToTable(prod) {
@@ -1856,6 +1937,17 @@
             : 'flex flex-col items-center justify-center py-1 px-2 text-slate-400 dark:text-slate-500 hover:text-slate-700 transition-colors w-16';
         }
       });
+
+      // Quản lý hiển thị thanh nổi thanh toán nhanh trên mobile
+      const floatBar = document.getElementById('mobileFloatingCheckoutBar');
+      const bottomNav = document.getElementById('mobileBottomNav');
+      if (tab === 'order') {
+        if (floatBar) floatBar.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
+      } else {
+        if (floatBar) floatBar.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
+      }
 
       if (tab === 'tables') renderTables();
       if (tab === 'order') {
